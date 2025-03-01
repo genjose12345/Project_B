@@ -1,13 +1,13 @@
-// Producer: Generates data and sends it through stdout to be consumed by another process
-use std::env; // For accessing command-line arguments
-use std::error::Error; // For error handling with Result and Box<dyn Error>
-use std::io::{self, Write}; // For writing to stdout and flushing the buffer
-use std::thread; // For thread::sleep functionality
-use std::time::Duration; // For specifying sleep durations
+//This project will generate data and send it through the pipe to be consumed by another process
+use std::env; //For accessing command-line arguments
+use std::error::Error; //Error handling
+use std::io::{self, Write}; //Writing to stdout
+use std::thread; //thread::sleep functionality
+use std::time::Duration; //specifying sleep durations
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // Parse command line arguments to get the number of items to generate
-    // Default to 10 if not specified or parsing fails
+    //Read command line arguments to get the number of items to generate
+    //Default to 10 if not specified
     let args: Vec<String> = env::args().collect();
     let count = if args.len() > 1 {
         args[1].parse::<u32>().unwrap_or(10)
@@ -15,47 +15,45 @@ fn main() -> Result<(), Box<dyn Error>> {
         10
     };
 
-    // Parse second command line argument to get delay between items
-    // Default to 500ms if not specified or parsing fails
+    //Read second command line argument to get delay between items
+    //Default to 500ms if not specified
     let delay_ms = if args.len() > 2 {
         args[2].parse::<u64>().unwrap_or(500)
     } else {
         500
     };
 
-    // Log startup information to stderr (not part of the pipe)
-    // eprintln! sends output to stderr, which won't be sent through the pipe
+    //print startup information to stderr
+    //eprintln! sends output to stderr
     eprintln!(
-        "Producer starting: generating {} items with {}ms delay",
+        "Sender starting: generating {} items with {}ms delay",
         count, delay_ms
     );
 
-    // Main data generation loop - create and send 'count' number of items
+    //Main data generation loop
     for i in 1..=count {
-        // Create a data item with a sequence number and current timestamp
+        //Create a data item with a sequence number and current timestamp
         let data = format!(
             "Item #{}: Generated at timestamp {}",
             i,
             chrono::Local::now()
         );
 
-        // Write the data to stdout, which will be piped to the consumer process
-        // The ? operator propagates any errors that might occur during writing
+        //Write the data to stdout which will then be sent through the pipe to the Reciver process
         writeln!(io::stdout(), "{}", data)?;
 
-        // Flush stdout to ensure data is sent immediately through the pipe
-        // Without this, data might be buffered and not sent until buffer is full
+        //Flush stdout to ensure data is sent immediately through the pipe
         io::stdout().flush()?;
 
-        // Log to stderr that we sent an item (this output won't go through the pipe)
-        eprintln!("Producer: sent item #{}", i);
+        //Print to stderr that we sent an item
+        eprintln!("Sender: sent item #{}", i);
 
-        // Pause to simulate processing time / production rate
+        //Pause to simulate processing time
         thread::sleep(Duration::from_millis(delay_ms));
     }
 
-    // Log completion message
-    eprintln!("Producer: finished sending all items");
+    //Print completion message
+    eprintln!("Sender: finished sending all items");
 
     // Return success
     Ok(())
